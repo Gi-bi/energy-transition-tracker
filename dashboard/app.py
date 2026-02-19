@@ -7,7 +7,7 @@ import streamlit as st
 # ---------------------------------------------------
 st.set_page_config(page_title="Energy Transition Tracker", layout="wide")
 
-st.title("⚡ Europe Energy Transition Tracker")
+st.title("Europe Energy Transition Tracker")
 st.markdown(
     "Built by **Jessica Grubbs** • Data source: **Eurostat** • "
     "Repo: GitHub `Gi-bi/energy-transition-tracker`"
