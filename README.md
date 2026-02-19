@@ -54,6 +54,49 @@ for each European country over time.
 
 ![Energy Transition](figures/energy_transition_timeline.png)
 
+## Country Mix Explorer 
+
+### Germany
+
+![Germany Mix](figures/germany_energy_mix.png)
+
+### France
+
+![France Mix](figures/france_energy_mix.png)
+
+### Norway
+
+![Norway Mix](figures/norway_energy_mix.png)
+
+### Poland
+
+![Poland Mix](figures/poland_energy_mix.png)
+
+### United Kingdom
+
+![United Kingdom Mix](figures/united_kingdom_energy_mix.png)
+
+### Spain
+
+![Spain Mix](figures/spain_energy_mix.png)
+
+### Italy
+
+![Italy Mix](figures/italy_energy_mix.png)
+
+### Netherlands
+
+![Netherlands Mix](figures/netherlands_energy_mix.png)
+
+### Sweden
+
+![Sweden Mix](figures/sweden_energy_mix.png)
+
+### Denmark
+
+![Denmark Mix](figures/denmark_energy_mix.png)
+
+
 ---
 
 ## Key Observations
