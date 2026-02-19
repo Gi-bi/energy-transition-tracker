@@ -97,24 +97,6 @@ Examples of country-level generation transitions:
 ### Poland
 ![Poland Mix](figures/poland_energy_mix.png)
 
-### United Kingdom
-![United Kingdom Mix](figures/united_kingdom_energy_mix.png)
-
-### Spain
-![Spain Mix](figures/spain_energy_mix.png)
-
-### Italy
-![Italy Mix](figures/italy_energy_mix.png)
-
-### Netherlands
-![Netherlands Mix](figures/netherlands_energy_mix.png)
-
-### Sweden
-![Sweden Mix](figures/sweden_energy_mix.png)
-
-### Denmark
-![Denmark Mix](figures/denmark_energy_mix.png)
-
 ---
 
 ## Key Observations
@@ -141,13 +123,15 @@ Examples of country-level generation transitions:
 
 ## Repository Structure
 
+```
 energy-transition-tracker/
-│
-├── data_processed/   # Cleaned analytical datasets
-├── notebooks/        # Exploration & dataset construction
-├── figures/          # Generated visualizations
-├── dashboard/        # Streamlit application
+├── data_processed/    # Cleaned analytical datasets
+├── notebooks/         # Exploration & dataset construction
+├── figures/           # Generated visualizations
+├── dashboard/         # Streamlit application
 └── README.md
+```
+
 
 ---
 
@@ -161,3 +145,9 @@ This project demonstrates how large public infrastructure datasets can be transf
 ## Author
 
 **Jessica Grubbs**  
+Data Analyst | Data Engineering & Energy Systems Analytics  
+
+Built using Python, Eurostat open data, and Streamlit to explore long-term electricity transition patterns across Europe.
+
+GitHub: https://github.com/Gi-bi
+
