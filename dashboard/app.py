@@ -147,23 +147,37 @@ with tab1:
         col3.metric("Latest year", latest_year)
 
     # ---- Transition insight ----
-    st.markdown("### Transition Insight")
+    # ---- Intelligent Transition Insight ----
+    st.markdown("### Key Insight")
+
     if dom_country.empty:
-        st.info("No transition insight available for this country (missing dominant-source data).")
+        st.info("No transition insight available for this country.")
     else:
         first = dom_country.iloc[0]
         last = dom_country.iloc[-1]
 
-        if first["energy_group"] == last["energy_group"]:
+        first_source = first["energy_group"]
+        last_source = last["energy_group"]
+
+        first_year = int(first["TIME_PERIOD"])
+        last_year = int(last["TIME_PERIOD"])
+
+        first_share = float(first["share"]) * 100
+        last_share = float(last["share"]) * 100
+
+        change = last_share - first_share
+
+        if first_source == last_source:
             st.info(
-                f"{country} has remained primarily powered by "
-                f"**{last['energy_group']}** since {int(first['TIME_PERIOD'])}."
+                f"{country} has remained dominated by **{last_source}** "
+                f"from {first_year} to {last_year}. "
+                f"Dominance strength changed by {change:+.1f}%."
             )
         else:
             st.success(
-                f"{country} transitioned from **{first['energy_group']}** "
-                f"to **{last['energy_group']}** between "
-                f"{int(first['TIME_PERIOD'])} and {int(last['TIME_PERIOD'])}."
+                f"{country} transitioned from **{first_source}** dominance "
+                f"to **{last_source}** between {first_year} and {last_year}. "
+                f"Dominance strength changed by {change:+.1f}%."
             )
 
     # ---- Country chart ----
@@ -247,6 +261,97 @@ with tab2:
         file_name=f"europe_snapshot_{year_selected}.csv",
         mime="text/csv"
     )
+
+# ---------------------------------------------------
+# RENEWABLES
+# ---------------------------------------------------
+    st.markdown("---")
+    st.subheader("Renewables Momentum")
+
+    st.caption(
+        "Renewables share is computed as Hydro + Wind + Bioenergy + Geothermal "
+        "(and Solar if present in the dataset). Momentum is the change in renewables share "
+        "per year (percentage points/year) between the selected years."
+    )
+
+    # Define renewable sources (include Solar if it exists)
+    renewable_sources = ["Hydro", "Wind", "Bioenergy", "Geothermal"]
+    if "Solar" in df_grouped["energy_group"].unique():
+        renewable_sources.append("Solar")
+
+    # Build renewables share per country-year
+    renew = (
+        df_grouped[df_grouped["energy_group"].isin(renewable_sources)]
+        .groupby(["geo", "TIME_PERIOD"], as_index=False)["share"]
+        .sum()
+    )
+    renew["renewables_share_pct"] = renew["share"] * 100
+
+    # Year range controls
+    min_y = int(renew["TIME_PERIOD"].min())
+    max_y = int(renew["TIME_PERIOD"].max())
+
+    cA, cB = st.columns(2)
+    with cA:
+        start_year = st.selectbox("Start year", list(range(min_y, max_y)), index=0, key="ren_start_year")
+    with cB:
+        end_year = st.selectbox("End year", list(range(min_y + 1, max_y + 1)), index=(max_y - (min_y + 1)), key="ren_end_year")
+
+    if end_year <= start_year:
+        st.warning("End year must be after start year.")
+    else:
+        # For each country, take the closest available year >= start_year and <= end_year
+        rows = []
+        for g in renew["geo"].unique():
+            dg = renew[renew["geo"] == g].sort_values("TIME_PERIOD")
+            start_row = dg[dg["TIME_PERIOD"] >= start_year].head(1)
+            end_row = dg[dg["TIME_PERIOD"] <= end_year].tail(1)
+
+            if start_row.empty or end_row.empty:
+                continue
+
+            y0 = int(start_row.iloc[0]["TIME_PERIOD"])
+            y1 = int(end_row.iloc[0]["TIME_PERIOD"])
+            r0 = float(start_row.iloc[0]["renewables_share_pct"])
+            r1 = float(end_row.iloc[0]["renewables_share_pct"])
+
+            if y1 == y0:
+                continue
+
+            momentum = (r1 - r0) / (y1 - y0)  # percentage points per year
+
+            rows.append({
+                "Country": g,
+                "Start Year": y0,
+                "End Year": y1,
+                "Renewables % (Start)": r0,
+                "Renewables % (End)": r1,
+                "Momentum (pp/year)": momentum
+            })
+
+        momentum_df = pd.DataFrame(rows).sort_values("Momentum (pp/year)", ascending=False)
+
+        # Display Top/Bottom
+        top_n_m = st.slider("Show top N", 5, 30, 10, 1, key="ren_topn")
+
+        left, right = st.columns(2)
+        with left:
+            st.markdown("####  Fastest growth")
+            st.dataframe(momentum_df.head(top_n_m), use_container_width=True, hide_index=True)
+        with right:
+            st.markdown("####  Slowest / declining")
+            st.dataframe(momentum_df.tail(top_n_m).sort_values("Momentum (pp/year)"), use_container_width=True, hide_index=True)
+
+        # Download
+        csv_bytes = momentum_df.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            "Download renewables momentum table (CSV)",
+            data=csv_bytes,
+            file_name=f"renewables_momentum_{start_year}_to_{end_year}.csv",
+            mime="text/csv",
+            key="download_renewables_momentum"
+        )
+
 
 with tab3:
     st.header("Compare Countries")
