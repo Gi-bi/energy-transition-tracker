@@ -2,17 +2,39 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import streamlit as st
 
+plt.rcParams.update({
+    "figure.facecolor": "white",
+    "axes.facecolor": "white",
+    "axes.edgecolor": "#e5e7eb",
+    "axes.labelcolor": "#374151",
+    "xtick.color": "#6b7280",
+    "ytick.color": "#6b7280",
+    "text.color": "#111827",
+    "font.size": 12,
+    "axes.titleweight": "bold",
+    "axes.titlesize": 16,
+})
+
+
 # ---------------------------------------------------
 # PAGE SETUP
 # ---------------------------------------------------
 st.set_page_config(page_title="Energy Transition Tracker", layout="wide")
 
-st.title("Europe Energy Transition Tracker")
 st.markdown(
-    "Built by **Jessica Grubbs** • Data source: **Eurostat** • "
-    "Repo: GitHub `Gi-bi/energy-transition-tracker`"
+    """
+    <div style="padding:16px 0 12px 0; border-bottom:1px solid #e5e7eb; margin-bottom:16px;">
+        <div style="font-size:50px; font-weight:800; line-height:1.1;">Europe Energy Transition Tracker</div>
+        <div style="font-size:20px; color:#6b7280; margin-top:6px;">
+            Electricity generation mix by country using Eurostat data
+        </div>
+        <div style="font-size:16px; color:#9ca3af; margin-top:6px;">
+            Built by <b>Jessica Grubbs</b> • Data: Eurostat
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
 )
-st.caption("Electricity generation mix by country using Eurostat data")
 
 # ---------------------------------------------------
 # LOAD DATA
@@ -54,7 +76,9 @@ use_shares = metric == "Share (%)"
 # ---------------------------------------------------
 # TABS
 # ---------------------------------------------------
-tab1, tab2 = st.tabs(["🏳️ Country Explorer", "🌍 Europe Overview"])
+tab1, tab2, tab3, tab4 = st.tabs(
+    ["Country Explorer", "Europe Overview", "Compare Countries", "Transition Stability"]
+)
 
 # ---------------------------------------------------
 # PLOT FUNCTION
@@ -91,7 +115,7 @@ def plot_country_mix(df_grouped, country, use_shares=True):
 
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    ax.grid(axis="y", alpha=0.2)
+    ax.grid(axis="y", color="#e5e7eb", linewidth=1)
 
     ax.legend(title="Energy Source", frameon=False)
 
@@ -151,7 +175,7 @@ with tab1:
 # TAB 2: EUROPE OVERVIEW
 # ---------------------------------------------------
 with tab2:
-    st.header("🌍 Europe Energy Transition Overview")
+    st.header("Europe Energy Transition Overview")
 
     eu_transition = (
         dominant_source
@@ -223,3 +247,185 @@ with tab2:
         file_name=f"europe_snapshot_{year_selected}.csv",
         mime="text/csv"
     )
+
+with tab3:
+    st.header("Compare Countries")
+
+    # Choose year + energy source
+    min_year = int(df_grouped["TIME_PERIOD"].min())
+    max_year = int(df_grouped["TIME_PERIOD"].max())
+
+    year_cmp = st.slider("Year", min_value=min_year, max_value=max_year, value=max_year, step=1, key="year_cmp")
+
+    sources = ["All"] + ENERGY_ORDER
+    source_cmp = st.selectbox("Energy source", sources, index=0)
+
+    metric_cmp = st.radio("Compare by", ["Share (%)", "Generation (GWh)"], horizontal=True)
+    use_share_cmp = metric_cmp == "Share (%)"
+
+    # Build a country-year table from df_grouped
+    d = df_grouped[df_grouped["TIME_PERIOD"] == year_cmp].copy()
+
+    if use_share_cmp:
+        d["value"] = d["share"] * 100
+        value_label = "Share (%)"
+    else:
+        d["value"] = d["generation_gwh"]
+        value_label = "Generation (GWh)"
+
+    # Optional filter by source
+    if source_cmp != "All":
+        d = d[d["energy_group"] == source_cmp]
+
+    # Rank table (top N)
+    top_n = st.slider("Top N", 5, 30, 10, 1)
+
+    # If source is All, pick dominant value per country for that year
+    if source_cmp == "All":
+        ranked = (
+            d.sort_values(["geo", "value"], ascending=[True, False])
+             .groupby("geo", as_index=False)
+             .first()
+             .sort_values("value", ascending=False)
+        )
+        ranked = ranked.rename(columns={"energy_group": "Dominant Source"})
+    else:
+        ranked = d.sort_values("value", ascending=False).rename(columns={"energy_group": "Source"})
+        ranked["Dominant Source"] = ranked["Source"]
+
+    ranked_display = ranked.head(top_n)[["geo", "Dominant Source", "value"]].rename(
+        columns={"geo": "Country", "value": value_label}
+    )
+
+    st.caption(f"Top {top_n} countries in {year_cmp} by {value_label} ({'dominant source' if source_cmp == 'All' else source_cmp}).")
+    st.dataframe(ranked_display, use_container_width=True, hide_index=True)
+
+    # Download
+    csv_bytes = ranked_display.to_csv(index=False).encode("utf-8")
+    st.download_button(
+        label="Download comparison table (CSV)",
+        data=csv_bytes,
+        file_name=f"country_comparison_{year_cmp}.csv",
+        mime="text/csv"
+    )
+# ---------------------------------------------------
+# COMPARE COUNTRIES
+# ---------------------------------------------------
+    st.markdown("---")
+    st.header("Compare Countries")
+
+    compare_countries = st.multiselect(
+        "Select countries to compare",
+        countries,
+        default=["Germany", "France", "Spain"]
+    )
+
+    if compare_countries:
+
+        compare_df = dominant_source[
+            dominant_source["geo"].isin(compare_countries)
+        ].copy()
+
+        compare_df["share_pct"] = compare_df["share"] * 100
+
+        fig3, ax3 = plt.subplots(figsize=(12,6))
+
+        for c in compare_countries:
+            d = compare_df[compare_df["geo"] == c]
+            ax3.plot(
+                d["TIME_PERIOD"],
+                d["share_pct"],
+                linewidth=2.5,
+                label=c
+            )
+
+        ax3.set_title("Dominant Energy Share Over Time")
+        ax3.set_xlabel("Year")
+        ax3.set_ylabel("Dominant Share (%)")
+
+        ax3.spines["top"].set_visible(False)
+        ax3.spines["right"].set_visible(False)
+        ax3.grid(axis="y", color="#e5e7eb")
+
+        ax3.legend(frameon=False)
+
+        plt.tight_layout()
+        st.pyplot(fig3)
+
+
+with tab4:
+    st.header("Transition Stability (Volatility)")
+
+    st.caption(
+        "Counts how many times each country changes its dominant electricity source over time. "
+        "Higher = more volatile transition. Lower = more stable."
+    )
+
+    # Ensure correct ordering
+    dom_sorted = dominant_source.sort_values(["geo", "TIME_PERIOD"]).copy()
+
+    # For each country, compare each year to previous year and count changes
+    dom_sorted["prev_source"] = dom_sorted.groupby("geo")["energy_group"].shift(1)
+    dom_sorted["changed"] = (dom_sorted["energy_group"] != dom_sorted["prev_source"]) & dom_sorted["prev_source"].notna()
+
+    volatility = (
+        dom_sorted.groupby("geo")["changed"]
+        .sum()
+        .reset_index(name="dominant_source_changes")
+        .sort_values("dominant_source_changes", ascending=False)
+    )
+
+    # Add first/last info for storytelling
+    first_last = (
+        dom_sorted.groupby("geo")
+        .agg(
+            first_year=("TIME_PERIOD", "min"),
+            last_year=("TIME_PERIOD", "max")
+        )
+        .reset_index()
+    )
+
+    volatility = volatility.merge(first_last, on="geo", how="left")
+
+    # Controls
+    top_n = st.slider("Show top N most volatile countries", 5, 50, 15, 1, key="vol_topn")
+
+    st.subheader("Most volatile transitions")
+    st.dataframe(
+        volatility.head(top_n).rename(columns={
+            "geo": "Country",
+            "dominant_source_changes": "Dominant Source Changes",
+            "first_year": "First Year",
+            "last_year": "Last Year"
+        }),
+        use_container_width=True,
+        hide_index=True
+    )
+
+    st.subheader("Most stable transitions")
+    st.dataframe(
+        volatility.sort_values("dominant_source_changes", ascending=True).head(top_n).rename(columns={
+            "geo": "Country",
+            "dominant_source_changes": "Dominant Source Changes",
+            "first_year": "First Year",
+            "last_year": "Last Year"
+        }),
+        use_container_width=True,
+        hide_index=True
+    )
+
+    # Download full table
+    csv_bytes = volatility.rename(columns={
+        "geo": "Country",
+        "dominant_source_changes": "Dominant Source Changes",
+        "first_year": "First Year",
+        "last_year": "Last Year"
+    }).to_csv(index=False).encode("utf-8")
+
+    st.download_button(
+        label="Download stability table (CSV)",
+        data=csv_bytes,
+        file_name="transition_stability_volatility.csv",
+        mime="text/csv"
+    )
+
