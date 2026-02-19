@@ -164,3 +164,81 @@ st.subheader("Country Energy Mix")
 
 fig = plot_country_mix(df_grouped, country, use_shares)
 st.pyplot(fig)
+
+# ---------------------------------------------------
+# EUROPE TRANSITION OVERVIEW
+# ---------------------------------------------------
+st.markdown("---")
+st.header("🌍 Europe Energy Transition Overview")
+
+eu_transition = (
+    dominant_source
+    .groupby(["TIME_PERIOD", "energy_group"])
+    .size()
+    .reset_index(name="country_count")
+)
+
+eu_pivot = (
+    eu_transition
+    .pivot(index="TIME_PERIOD", columns="energy_group", values="country_count")
+    .fillna(0)
+    .sort_index()
+)
+
+energy_order = ["Hydro", "Wind", "Coal", "Natural Gas", "Nuclear", "Bioenergy", "Geothermal"]
+for src in energy_order:
+    if src not in eu_pivot.columns:
+        eu_pivot[src] = 0
+eu_pivot = eu_pivot[energy_order]
+
+fig2, ax2 = plt.subplots(figsize=(12, 6))
+colors2 = [energy_colors.get(c, "#999999") for c in eu_pivot.columns]
+
+eu_pivot.plot.area(ax=ax2, color=colors2, linewidth=0.6, alpha=0.95)
+
+ax2.set_title("Dominant Electricity Source Across Europe (Country Count)")
+ax2.set_xlabel("Year")
+ax2.set_ylabel("Number of Countries")
+ax2.spines["top"].set_visible(False)
+ax2.spines["right"].set_visible(False)
+ax2.grid(axis="y", alpha=0.2)
+ax2.legend(title="Energy Source", frameon=False)
+
+plt.tight_layout()
+st.pyplot(fig2)
+
+# ---------------------------------------------------
+# YEAR SLIDER: "Europe snapshot" table
+# ---------------------------------------------------
+st.subheader("🔎 Europe Snapshot by Year")
+
+min_year = int(dominant_source["TIME_PERIOD"].min())
+max_year = int(dominant_source["TIME_PERIOD"].max())
+
+year_selected = st.slider("Pick a year", min_value=min_year, max_value=max_year, value=max_year, step=1)
+
+snapshot = dominant_source[dominant_source["TIME_PERIOD"] == year_selected].copy()
+snapshot["share_pct"] = snapshot["share"] * 100
+snapshot = snapshot.sort_values("share_pct", ascending=False)
+
+st.caption(f"Dominant source per country in {year_selected} (sorted by dominant share).")
+st.dataframe(
+    snapshot[["geo", "energy_group", "share_pct"]]
+        .rename(columns={"geo": "Country", "energy_group": "Dominant Source", "share_pct": "Dominant Share (%)"}),
+    use_container_width=True,
+    hide_index=True
+)
+
+# ---- Download snapshot as CSV ----
+csv_bytes = snapshot[["geo", "energy_group", "share_pct"]].rename(
+    columns={"geo": "Country", "energy_group": "Dominant Source", "share_pct": "Dominant Share (%)"}
+).to_csv(index=False).encode("utf-8")
+
+st.download_button(
+    label=f"Download {year_selected} snapshot (CSV)",
+    data=csv_bytes,
+    file_name=f"europe_snapshot_{year_selected}.csv",
+    mime="text/csv"
+)
+
+
