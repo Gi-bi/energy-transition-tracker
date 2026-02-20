@@ -1,25 +1,54 @@
 # Europe Energy Transition Tracker
 
-An interactive data analytics project exploring how electricity generation sources have evolved across European countries from **2000–present** using Eurostat energy balance data.
+An interactive analytics project examining how electricity generation has evolved across European countries from 2000 to the present using Eurostat energy balance data.
 
-This project transforms raw infrastructure datasets into a longitudinal analytical system that reveals how national power systems transition over time — identifying the dominant electricity source for each country and tracking structural change across Europe.
+The project identifies which energy source dominated each country’s electricity production over time and highlights how national power systems transition between fossil fuels, nuclear energy, and renewables.
 
 ---
 
-## Project Goal
+## Project Overview
 
-Europe’s electricity system is undergoing one of the largest infrastructure transitions in modern history, shifting from fossil fuels toward renewable and low-carbon generation.
+Europe’s electricity infrastructure is undergoing a long-term structural shift. Instead of focusing on single-year statistics or headlines, this project analyzes energy systems longitudinally to answer a practical question:
 
-This project answers:
+**Which energy source actually powered each country the most, and how has that changed over time?**
 
-**Which energy source powered each country the most — and how has that changed over time?**
+To answer this, I built a reproducible analytics pipeline that:
 
-Beyond visualization, the goal is to build a reproducible analytics pipeline capable of:
+- Detects national energy transitions  
+- Compares countries across time  
+- Measures stability versus volatility in generation systems  
+- Converts large public datasets into clear, interpretable outputs  
 
-- Detecting national energy transitions
-- Comparing countries across time
-- Measuring stability vs. volatility in energy systems
-- Translating large public datasets into decision-ready insights
+---
+
+## What This Project Produces
+
+- A country-year dataset of electricity generation by source (GWh and share)  
+- Annual dominant energy source classification  
+- Europe-wide transition timeline visualization  
+- Country energy mix analysis  
+- An interactive Streamlit dashboard for exploration and comparison  
+
+---
+
+## Data Notes
+
+Eurostat fuel categories do not map directly to simple energy labels, so fuels were grouped into analytical systems:
+
+Hydro, Wind, Coal, Natural Gas, Nuclear, Bioenergy, and Geothermal.
+
+Some countries contain missing fuel values in certain years. For share calculations, missing generation values are treated as zero.
+
+---
+
+## How to Run Locally
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r dashboard/requirements.txt
+streamlit run dashboard/app.py
+```
 
 ---
 
