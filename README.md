@@ -4,6 +4,12 @@ An interactive analytics project examining how electricity generation has evolve
 
 The project identifies which energy source dominated each country’s electricity production over time and highlights how national power systems transition between fossil fuels, nuclear energy, and renewables.
 
+## Live Dashboard
+
+Interactive Streamlit application:
+
+https://energy-transition-tracker-gi-bi.streamlit.app/
+
 ---
 
 ## Project Overview
@@ -52,13 +58,7 @@ streamlit run dashboard/app.py
 
 ---
 
-## Live Dashboard
-
-Interactive Streamlit application:
-
-https://energy-transition-tracker-gi-bi.streamlit.app/
-
-Features include:
+## Features
 
 - Country energy mix explorer
 - Europe-wide transition overview
